@@ -31,9 +31,9 @@ def fetch_episodes(after_date):
             parsed_title = title_parser.match(entry.title)
             if parsed_title:
                 yield Episode(
-                    show=parsed_title['show'],
-                    title=parsed_title['title'],
-                    code=parsed_title['code'],
+                    show=parsed_title.group('show'),
+                    title=parsed_title.group('title'),
+                    code=parsed_title.group('code'),
                     links=[entry.link]
                 )
             else:
@@ -65,13 +65,17 @@ def push_to_trello(episodes):
         token=TRELLO_TOKEN
     )
     board = client.get_board(TRELLO_BOARD_ID)
-    list = board.open_lists()[0]
+    first_list = board.open_lists()[0]
+    existing_cards = {c.name for c in first_list.list_cards()}
     for e in episodes:
         card_name = ' - '.join((e.show, e.code, e.title)) if e.title else e.show
-        card_desc = ', '.join(
-            '[Link %d](%s)' % link for link in enumerate(e.links, start=1)
-        )
-        list.add_card(name=card_name, desc=card_desc, position='bottom')
+        if card_name not in existing_cards:
+            card_desc = ', '.join(
+                '[Link %d](%s)' % link for link in enumerate(e.links, start=1)
+            )
+            first_list.add_card(
+                name=card_name, desc=card_desc, position='bottom'
+            )
 
 
 def main():
