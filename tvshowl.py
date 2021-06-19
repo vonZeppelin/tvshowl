@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import feedparser
 import re
 
@@ -9,19 +10,14 @@ from functools import reduce
 from trello import TrelloClient
 
 
-SHOWRSS_FEED_URL = '<showrss feed url>'
-TRELLO_API_KEY = '<trello api key>'
-TRELLO_TOKEN = '<trello token>'
-TRELLO_BOARD_ID = '<trello board id>'
-
 Episode = namedtuple('Episode', 'show title code links')
 
 
-def fetch_episodes(after_date):
+def fetch_episodes(feed_url, after_date):
     title_parser = re.compile(
         '^(?P<show>.+)\s(?P<code>\d{1,3}.\d{1,3})\s(?P<title>.+?)(\s\d{3,4}.*)?$'
     )
-    feed = feedparser.parse(SHOWRSS_FEED_URL, modified=after_date)
+    feed = feedparser.parse(feed_url, modified=after_date)
 
     for entry in feed.entries:
         if entry.published_parsed >= after_date:
@@ -56,12 +52,9 @@ def merge_namesake_episodes(episodes):
         yield reduce(episode_merger, es)
 
 
-def push_to_trello(episodes):
-    client = TrelloClient(
-        api_key=TRELLO_API_KEY,
-        token=TRELLO_TOKEN
-    )
-    board = client.get_board(TRELLO_BOARD_ID)
+def push_to_trello(episodes, board_id, api_key, token):
+    client = TrelloClient(api_key=api_key, token=token)
+    board = client.get_board(board_id)
     first_list = board.open_lists()[0]
     existing_cards = {c.name for c in first_list.list_cards()}
     for e in episodes:
@@ -76,10 +69,21 @@ def push_to_trello(episodes):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description='Turns showRSS episodes to Trello cards.'
+    )
+    parser.add_argument('--showrss-feed', required=True, help='showRSS feed URL')
+    parser.add_argument('--trello-board', required=True, help='Trello board ID')
+    parser.add_argument('--trello-key', required=True, help='Trello API key')
+    parser.add_argument('--trello-token', required=True, help='Trello API token')
+    args = parser.parse_args()
+
     day_ago = (datetime.now() - timedelta(days=1)).timetuple()
-    episodes = fetch_episodes(day_ago)
+    episodes = fetch_episodes(args.showrss_feed, day_ago)
     episodes = merge_namesake_episodes(episodes)
-    push_to_trello(episodes)
+    push_to_trello(
+        episodes, args.trello_board, args.trello_key, args.trello_token
+    )
 
 
 if __name__ == '__main__':
