@@ -1,14 +1,11 @@
-#!/usr/bin/env python
-
-import re
+#!/usr/bin/env python3
 
 import feedparser
+import re
 
 from collections import defaultdict, namedtuple
 from datetime import datetime, timedelta
-
-from six import itervalues
-from six.moves import reduce
+from functools import reduce
 from trello import TrelloClient
 
 
@@ -31,9 +28,9 @@ def fetch_episodes(after_date):
             parsed_title = title_parser.match(entry.title)
             if parsed_title:
                 yield Episode(
-                    show=parsed_title.group('show'),
-                    title=parsed_title.group('title'),
-                    code=parsed_title.group('code'),
+                    show=parsed_title['show'],
+                    title=parsed_title['title'],
+                    code=parsed_title['code'],
                     links=[entry.link]
                 )
             else:
@@ -55,7 +52,7 @@ def merge_namesake_episodes(episodes):
         group_key = episode.show + episode.code
         episode_groups[group_key].append(episode)
 
-    for es in itervalues(episode_groups):
+    for es in episode_groups.values():
         yield reduce(episode_merger, es)
 
 
@@ -71,7 +68,7 @@ def push_to_trello(episodes):
         card_name = ' - '.join((e.show, e.code, e.title)) if e.title else e.show
         if card_name not in existing_cards:
             card_desc = ', '.join(
-                '[Link %d](%s)' % link for link in enumerate(e.links, start=1)
+                f'[Link {index}]({link})' for (index, link) in enumerate(e.links, start=1)
             )
             first_list.add_card(
                 name=card_name, desc=card_desc, position='bottom'
