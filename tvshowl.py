@@ -56,12 +56,14 @@ def push_to_trello(episodes, board_id, api_key, token):
     client = TrelloClient(api_key=api_key, token=token)
     board = client.get_board(board_id)
     first_list = board.open_lists()[0]
-    existing_cards = {c.name for c in first_list.list_cards()}
+    existing_cards = {
+        c.name for c in board.open_cards(custom_field_items='false')
+    }
     for e in episodes:
         card_name = ' - '.join((e.show, e.code, e.title)) if e.title else e.show
         if card_name not in existing_cards:
             card_desc = ', '.join(
-                f'[Link {index}]({link})' for (index, link) in enumerate(e.links, start=1)
+                f'[Link {index}]({link})' for index, link in enumerate(e.links, start=1)
             )
             first_list.add_card(
                 name=card_name, desc=card_desc, position='bottom'
