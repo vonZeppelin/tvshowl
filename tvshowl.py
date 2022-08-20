@@ -4,18 +4,24 @@ import argparse
 import feedparser
 import re
 
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from datetime import datetime, timedelta
 from functools import reduce
+from time import struct_time
 from trello import TrelloClient
+from typing import Dict, Iterable, List, NamedTuple
 
 
-Episode = namedtuple('Episode', 'show title code links')
+class Episode(NamedTuple):
+    show: str
+    title: str
+    code: str
+    links: List[str]
 
 
-def fetch_episodes(feed_url, after_date):
+def fetch_episodes(feed_url: str, after_date: struct_time) -> Iterable[Episode]:
     title_parser = re.compile(
-        '^(?P<show>.+)\s(?P<code>\d{1,3}.\d{1,3})\s(?P<title>.+?)(\s\d{3,4}.*)?$'
+        r'^(?P<show>.+)\s(?P<code>\d{1,3}.\d{1,3})\s(?P<title>.+?)(\s\d{3,4}.*)?$'
     )
     feed = feedparser.parse(feed_url, modified=after_date)
 
@@ -38,12 +44,12 @@ def fetch_episodes(feed_url, after_date):
                 )
 
 
-def merge_namesake_episodes(episodes):
-    def episode_merger(ep1, ep2):
+def merge_namesake_episodes(episodes: Iterable[Episode]) -> Iterable[Episode]:
+    def episode_merger(ep1: Episode, ep2: Episode) -> Episode:
         ep1.links.extend(ep2.links)
         return ep1
 
-    episode_groups = defaultdict(list)
+    episode_groups: Dict[str, List[Episode]] = defaultdict(list)
     for episode in episodes:
         group_key = episode.show + episode.code
         episode_groups[group_key].append(episode)
@@ -52,7 +58,7 @@ def merge_namesake_episodes(episodes):
         yield reduce(episode_merger, es)
 
 
-def push_to_trello(episodes, board_id, api_key, token):
+def push_to_trello(episodes: Iterable[Episode], board_id: str, api_key: str, token: str):
     client = TrelloClient(api_key=api_key, token=token)
     board = client.get_board(board_id)
     first_list = board.open_lists()[0]
