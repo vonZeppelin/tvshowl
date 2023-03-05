@@ -66,7 +66,7 @@ def push_to_trello(episodes: Iterable[Episode], board_id: str, api_key: str, tok
         c.name for c in board.open_cards(custom_field_items='false')
     }
     for e in episodes:
-        card_name = ' - '.join((e.show, e.code, e.title)) if e.title else e.show
+        card_name = ' – '.join((e.show, e.code, e.title)) if e.title else e.show
         if card_name not in existing_cards:
             card_desc = ', '.join(
                 f'[Link {index}]({link})' for index, link in enumerate(e.links, start=1)
