@@ -1,0 +1,8 @@
+{
+  "cron": [
+    {
+      "command": "/app/tvshowl.py",
+      "schedule": "0 */6 * * *"
+    }
+  ]
+}

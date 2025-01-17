@@ -7,6 +7,7 @@ import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from functools import reduce
+from os import getenv
 from time import struct_time
 from trello import TrelloClient
 from typing import Dict, Iterable, List, NamedTuple
@@ -80,10 +81,10 @@ def main():
     parser = argparse.ArgumentParser(
         description='Turns showRSS episodes to Trello cards.'
     )
-    parser.add_argument('--showrss-feed', required=True, help='showRSS feed URL')
-    parser.add_argument('--trello-board', required=True, help='Trello board ID')
-    parser.add_argument('--trello-key', required=True, help='Trello API key')
-    parser.add_argument('--trello-token', required=True, help='Trello API token')
+    parser.add_argument('--showrss-feed', default=getenv('FEED_URL'), help='showRSS feed URL')
+    parser.add_argument('--trello-board', default=getenv('TRELLO_BOARD'), help='Trello board ID')
+    parser.add_argument('--trello-key', default=getenv('TRELLO_KEY'), help='Trello API key')
+    parser.add_argument('--trello-token', default=getenv('TRELLO_TOKEN'), help='Trello API token')
     args = parser.parse_args()
 
     day_ago = (datetime.now() - timedelta(days=1)).timetuple()
